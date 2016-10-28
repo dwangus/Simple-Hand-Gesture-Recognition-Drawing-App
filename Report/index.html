@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Drawing with Computer Vision</title>
+    <link rel="stylesheet" type="text/css" href="css/app.css">
+</head>
+<body>
+    <header>
+        <div class="row">
+            <div class="columns small-12 medium-10 small-centered">
+                <img src="img/bu-logo.gif">
+                <h1>Drawing with Computer Vision</h1>
+            </div>
+        </div>
+        
+        <div class="project-facts">
+            <div class="row">
+                <div class="columns small-6 medium-5 medium-offset-1 left">
+                    <h3>David Wang</h3>
+                    <p>Team: David Wang, Cyril Saade, Rebecca Jellinek</p>
+                </div>
+                <div class="columns small-6 medium-5 left text-right">
+                    <h3>CS440 P1</h3>
+                    <p>February 7, 2016</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="columns small-12 medium-10 small-centered">
+                <div class="videoWrapper">
+                    <iframe src="https://player.vimeo.com/video/154520890" width="100%" height="100%" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section>
+        <div class="row">
+            <div class="columns small-12 medium-10 small-centered">
+            
+                <div class="contributions">
+                    <h3>David's Contribution</h3>
+                    <p>Mainly worked on the algorithms necessary to detecting relevant contours, convex-hulls, convexity-defects of the hand (a well as those graphical representations on screen), as well as portion of code used to
+					determine and track the center of the hand around the screen.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="row">
+            <div class="columns small-12 medium-10 small-centered">
+                <h2>Problem Definition</h2>
+                <p>The current problem is to recognize hand shapes and hand gestures given feed from a camera. The system is based on the hand shape as well as the motions of a user's hand. Hand recognition, and furthermore, the recognition of different hand shapes (e.g, thumbs-up, open-palm, fist) is used in this program to determine different colors to be used when drawing. Hand gestures and movements will be used as a cursor to draw on the screen. We assume that the hand is the largest blob in a given image frame, and we assume that the person steps out of the frame so that the hand is the only moving object. By tracking the center of the palm, we can use the hand to draw in the air, and by tracking the convex-hulls in a contoured image, we can determine hand shapes that correspond to predetermined colors. Certain difficulties lie in confusing the surrounding skin (e.g, wrist, fore-arm) with the hand, as well as confusions that come from background movement that may be identified as a larger image than the hand.</p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="row">
+            <div class="columns small-12 medium-10 small-centered">
+                <h2>Method and Implementation</h2>
+                <p>The user presses "D" to start/quit drawing and Esc to quit the program. The user will move his or her hand in any general direction to "draw" on the screen, and he or she can change the color of the cursor by alternating between two recognizable hand shapes.</p>
+                <h3>Binary Image Representation and Contour Vector Points</h3>
+                <p>This method was motivated to first delineate an open hand from a closed fist. After applying our skin detection algorithm, which ultimately converts to a black-and-white (binary representation of human skin), we find the contours of the image by storing the vector of points which correspond to a contour-outline found in the input-frame "skinfilter." We then find the point in the vector of contours with the largest area, which is assumed to be the hand.</p>
+                <p>After finding the largest contour in the vector, we find the convex points in the contour and the points furthest away from each convex vertex (convexity defects). We draw the contours and the convex-hulls on the screen, and they change according to the input image frame. The convex-hulls represent the fingers while the defects represent the spaces between each finger. By counting the number of convex-defects, we can determine how many fingers are up (e.g, determine if the hand is open-palmed). An open palm corresponds to the color white. If the user decides to close his or her hand into a fist (i.e. if less than three fingers are detected), the program will detect the minimum convex-defects as corresponding to the color orange.</p>
+                <h3>Convex-Hulls and Defects in Hand Tracking and Finger Detection</h3>
+                <p>If the set of convex-defects (belonging to the largest detected contour in the image, largest defined by a threshold of area contained in the contour) is at least greater than or equal to 3, then we sum up the start-point, end-point, and farthest-point of every defect (as the original contour touches the portion of the convex hull) in the set of convex-defects and average those (x,y) points to get a "rough estimate" of the center of the palm. At the same time, we have saved these coordinate points in a vector.</p>
+                <p>Then, using this rough_palm_center, we choose the closest 3 points to this center (saved in a vector) and average them to get a new circle radius and palm_center. We continually calculate in real time the 3 closest points that find a "valid radius" (as determined in the circleFromPoints() function), as there is a high chance the 3 points might be in a linear line or oriented in such a way that it forms a very large circle. Finally, we find the average palm centers for the last few frames to stabilize/smoothen the tracked movement of the palm_center, as well as finding its average radius. Using this palm_center averaged over several metrics and frames, we then draw a small circle-cursor around the center of radius 5. Furthermore, using this palm_center, we can detect the number of fingers by finding (under the constraints of certain thresholds) points in the convex-defect that form a near-isoceles triangle (with the length of the fingers nearly equal, and the corners of the triangle being the tips of two adjacent fingers and the farthest-point depressed within that convexity-defect).</p>
+                <p>This method, however, makes it difficult to classify the thumb and pinky as fingers though, as the length is comparatively shorter to their adjacent fingers. Once these triangles are recognized between the convex-hull and the contour, we classify the number of isosceles triangles as the number of fingers, and optionally draw a line from one of the convexity-defect points to one of the convex-hull points as a finger stemming from the palm_center circle.</p>
+                <h3>Creating the drawing frame</h3>
+                <p>The drawing interface consists of two super-imposed frames: drawingFrame which stores the shapes that have been drawn by the user and HandForDrawingFrame which displays the hand of the user. These two images are super-imposed using myFrameSum function.</p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="row">
+            <div class="columns small-12 medium-10 small-centered">
+                <h2>Experiments</h2>
+                <p>In our experiments, we tested holding up different numbers of fingers and practicing drawing using hand gestures and movements.</p>
+                <h3>Results</h3>
+                <img src="img/1.png">
+                <img src="img/2.png">
+                <img src="img/3.png">
+                <img src="img/4.png">
+                <img src="img/5.png">
+                <img src="img/6.png">
+                <img src="img/7.png">
+                <img src="img/8.png">
+                <img src="img/9.png">
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="row">
+            <div class="columns small-12 medium-10 small-centered">
+                <h2>Discussion</h2>
+                <p>The methodology produces an overall accurate output. The program responds to hand gestures by acting as a cursor along the screen, and the hand shape (closed-fist or open-palm) of the user will correspond to a color that will be outputted on the screen in the motion of the hand gesture. Depending on background motion as well as other objects in the frame (the user's face or arm), the accuracy of the program falters.</p>
+                <p>The strengths of our program lie in the innovative way of choosing colors without requiring a user to "click" and its creative way of testing gesture recognition. Additionally, we use built in functions to determine skin color and threshold based on skin values rather than using multiple functions such as grayscaling, blurring, and then thresholding. In terms of methodology, the convexity defect depth threshold will filter out the tiny convexity defects detected.</p>
+                <p>However, the generic threshold for determining the number of convex-hulls may be improved. Our program can be more efficient and accurate by improving detection of the hand. Currently, if the user's arm is detected (e.g, he or she is wearing short-sleeves), it will trace that instead of the hand. In the future, we would hope to employ background subtraction to determine that hand is the only object moving in the frame. We would also perform more conditional testing for finger detection. Therefore, a user may be able to draw with multiple colors that correspond to multiple hand shapes. We would also hope to specify an optimal threshold for contouring.</p>
+                <h3>Confusion matrix of hand shape recognition evaluation</h3>
+                <img src="img/matrix.png">
+                <p>Where C(i,j) is the number of times the algorithm hypo-sized object in class j to be in class i. There are 2 true positives, in the case where the program expects the output that it receives. Based on the number of samples, the program correctly differentiates between a fist and open palm due to a threshold of 3 in order to be a fist.</p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="row">
+            <div class="columns small-12 medium-10 small-centered">
+                <h2>Conclusions</h2>
+                <p>In this assignment, we created a program for hand shape recognition and finger identification that can be used to draw on a screen as well as indicate preferred colors for drawing. By identifying when a hand is closed and when it is open (through analyzing convex-hulls in the largest contoured area), the program "draws" in different colors depending on the hand shape. Furthermore, the program understands hand gestures and movements by tracking the palm and using it as a means of drawing. If given the opportunity, we would improve our program to recognize more hand shapes, and therefore draw with more colors. Additionally, we could improve accuracy by utilizing a background differencing technique. The results of our confusion matrix show that our program accurately differentiates between an open palm and a closed fist. However, improvements should be made to increase accuracy of finger detection.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="last">
+        <div class="row">
+            <div class="columns small-12 medium-10 small-centered">
+                <h2>Credits and Bibliography</h2>
+                <p>Our group collaborated together to brainstorm ideas, methods, and implementation. We took turns coding, cleaning up, testing, and writing up reports.</p>
+                <p>We referred to the following articles to understand the implementation of convex-hulls, defects, and hand tracking.</p>
+                <p><a target="_blank" href="http://stackoverflow.com/questions/31354150/opencv-convexity-defects-drawing">http://stackoverflow.com/questions/31354150/opencv-convexity-defects-drawing</a> Feb 7th 2016</p>
+                <p><a target="_blank" href="http://s-ln.in/2013/04/18/hand-tracking-and-gesture-detection-opencv/">http://s-ln.in/2013/04/18/hand-tracking-and-gesture-detection-opencv/</a> Feb 7th 2016</p>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
